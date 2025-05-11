@@ -18,10 +18,9 @@ if ($userRole !== 'manager' && $userRole !== 'coach') {
 // Get form data
 $statID   = isset($_POST['stat_ID']) ? (int)$_POST['stat_ID'] : 0;
 $playerID = isset($_POST['name_ID']) ? (int)$_POST['name_ID'] : 0;
-$time     = $_POST['time'];
-$points   = (int)$_POST['points'];
-$assists  = (int)$_POST['assists'];
-$rebounds = (int)$_POST['rebounds'];
+$diff_score   = (int)$_POST['diff_score'];
+$exec_score  = (int)$_POST['exec_score'];
+$fin_score = (int)$_POST['fin_score'];
 
 // Verify required fields
 if($statID > 0 && $playerID > 0) {
@@ -34,22 +33,16 @@ if($statID > 0 && $playerID > 0) {
         echo "Errno: " . $db->connect_errno . "<br/>";
         echo "Error: " . $db->connect_error . "<br/>";
     } else {
-        // Parse playing time
-        list($minutes, $seconds) = explode(':', $time);
-        $minutes = (int)$minutes;
-        $seconds = (int)$seconds;
 
         // Update existing statistic
         $query = "UPDATE Statistics SET 
-                  PlayingTimeMin = ?,
-                  PlayingTimeSec = ?,
-                  Points = ?,
-                  Assists = ?,
-                  Rebounds = ?
+                  Difficulty_Score = ?,
+                  Execution_Score = ?,
+                  Final_Score = ?
                   WHERE ID = ? AND Player = ?";
 
         $stmt = $db->prepare($query);
-        $stmt->bind_param('iiiiiii', $minutes, $seconds, $points, $assists, $rebounds, $statID, $playerID);
+        $stmt->bind_param('iiiiiii', $diff_score, $exec_score, $fin_score, $statID, $playerID);
         $stmt->execute();
 
         if($stmt->affected_rows == 0) {
