@@ -372,11 +372,9 @@ if($db->connect_errno != 0) {
                     TeamRoster.UserAccount,
 
                     COUNT(Statistics.Player),
-                    ROUND(AVG(Statistics.PlayingTimeMin)),
-                    ROUND(AVG(Statistics.PlayingTimeSec)),
-                    ROUND(AVG(Statistics.Points)),
-                    ROUND(AVG(Statistics.Assists)),
-                    ROUND(AVG(Statistics.Rebounds))
+                    ROUND(AVG(Statistics.Difficulty_Score)),
+                    ROUND(AVG(Statistics.Execution_Score)),
+                    ROUND(AVG(Statistics.Final_Score))
                   FROM TeamRoster LEFT JOIN Statistics ON
                     Statistics.Player = TeamRoster.ID";
 
@@ -407,11 +405,9 @@ if($db->connect_errno != 0) {
         $UserAccount,
 
         $GamesPlayed,
-        $PlayingTimeMin,
-        $PlayingTimeSec,
-        $Points,
-        $Assists,
-        $Rebounds);
+        $diff_score,# look into this, keep an eye out for it
+        $exec_score,
+        $fin_score);
 
     // Query to get all statistics with player names for the statistics form
     $statQuery = "SELECT 
@@ -419,11 +415,9 @@ if($db->connect_errno != 0) {
                       Statistics.Player,
                       TeamRoster.Name_First,
                       TeamRoster.Name_Last,
-                      Statistics.PlayingTimeMin,
-                      Statistics.PlayingTimeSec,
-                      Statistics.Points,
-                      Statistics.Assists,
-                      Statistics.Rebounds
+                      Statistics.Difficulty_Score,
+                      Statistics.Execution_Score,
+                      Statistics.Final_Score
                     FROM Statistics 
                     JOIN TeamRoster ON Statistics.Player = TeamRoster.ID";
 
@@ -438,7 +432,7 @@ if($db->connect_errno != 0) {
     $statStmt->execute();
     $statStmt->store_result();
     $statStmt->bind_result($Stat_ID, $Stat_Player, $Stat_FirstName, $Stat_LastName,
-        $Stat_TimeMin, $Stat_TimeSec, $Stat_Points, $Stat_Assists, $Stat_Rebounds);
+         $Stat_diff_score, $Stat_exec_score, $Stat_fin_scor); #keep track of this too
 }
 ?>
 
@@ -583,9 +577,8 @@ if($db->connect_errno != 0) {
                                     <?php
                                     while($statStmt->fetch()) {
                                         $playerName = "$Stat_LastName, $Stat_FirstName";
-                                        $time = sprintf("%d:%02d", $Stat_TimeMin, $Stat_TimeSec);
-                                        echo "<option value=\"$Stat_ID\" data-player=\"$Stat_Player\">$playerName - $time - $Stat_Points pts</option>\n";
-                                    }
+                                        echo "<option value=\"$Stat_ID\" data-player=\"$Stat_Player\">$playerName - $Stat_diff_score pts</option>\n";
+                                    }#look into this too
                                     ?>
                                 </select>
                             </td>
@@ -606,25 +599,20 @@ if($db->connect_errno != 0) {
                                 </select>
                             </td>
                         </tr>
-
+                                    <!-- look into this -->
                         <tr>
-                            <td class="form-label">Playing Time (min:sec)</td>
-                            <td class="form-field"><input type="text" name="time" id="playingTime" value="" maxlength="5" placeholder="00:00"/></td>
+                            <td class="form-label">Difficulty Score</td>
+                            <td class="form-field"><input type="text" name="diff_score" id="diff_score" value="" maxlength="3"/></td>
+                        </tr>
+                              
+                        <tr>
+                            <td class="form-label">Execution Score</td>
+                            <td class="form-field"><input type="text" name="exec_score" id="exec_score" value="" maxlength="2"/></td>
                         </tr>
 
                         <tr>
-                            <td class="form-label">Points Scored</td>
-                            <td class="form-field"><input type="text" name="points" id="points" value="" maxlength="3"/></td>
-                        </tr>
-
-                        <tr>
-                            <td class="form-label">Assists</td>
-                            <td class="form-field"><input type="text" name="assists" id="assists" value="" maxlength="2"/></td>
-                        </tr>
-
-                        <tr>
-                            <td class="form-label">Rebounds</td>
-                            <td class="form-field"><input type="text" name="rebounds" id="rebounds" value="" maxlength="2"/></td>
+                            <td class="form-label">Final Score</td>
+                            <td class="form-field"><input type="text" name="fin_score" id="fin_score" value="" maxlength="2"/></td>
                         </tr>
 
                         <tr>
@@ -654,14 +642,14 @@ if($db->connect_errno != 0) {
                                     $statStmt->data_seek(0);
                                     while($statStmt->fetch()) {
                                         $playerName = "$Stat_LastName, $Stat_FirstName";
-                                        $time = sprintf("%d:%02d", $Stat_TimeMin, $Stat_TimeSec);
-                                        echo "<option value=\"$Stat_ID\" data-player=\"$Stat_Player\">$playerName - $time - $Stat_Points pts</option>\n";
+                                        echo "<option value=\"$Stat_ID\" data-player=\"$Stat_Player\">$playerName - $Stat_diff_score pts</option>\n";
+                                        #look into this too
                                     }
                                     ?>
                                 </select>
                             </td>
                         </tr>
-
+                                    <!-- look into this -->
                         <tr>
                             <td class="form-label">Player</td>
                             <td class="form-field"><span id="coachStatPlayerName"></span>
@@ -669,23 +657,18 @@ if($db->connect_errno != 0) {
                         </tr>
 
                         <tr>
-                            <td class="form-label">Playing Time (min:sec)</td>
-                            <td class="form-field"><input type="text" name="time" id="coachPlayingTime" value="" maxlength="5" placeholder="00:00"/></td>
+                            <td class="form-label">Difficulty Score</td>
+                            <td class="form-field"><input type="text" name="diff_score" id="coachdiff_score" value="" maxlength="3"/></td>
                         </tr>
 
                         <tr>
-                            <td class="form-label">Points Scored</td>
-                            <td class="form-field"><input type="text" name="points" id="coachPoints" value="" maxlength="3"/></td>
+                            <td class="form-label">Execution Score</td>
+                            <td class="form-field"><input type="text" name="exec_score" id="coachexec_score" value="" maxlength="2"/></td>
                         </tr>
 
                         <tr>
-                            <td class="form-label">Assists</td>
-                            <td class="form-field"><input type="text" name="assists" id="coachAssists" value="" maxlength="2"/></td>
-                        </tr>
-
-                        <tr>
-                            <td class="form-label">Rebounds</td>
-                            <td class="form-field"><input type="text" name="rebounds" id="coachRebounds" value="" maxlength="2"/></td>
+                            <td class="form-label">Final Score</td>
+                            <td class="form-field"><input type="text" name="fin_score" id="coachfin_score" value="" maxlength="2"/></td>
                         </tr>
 
                         <tr>
@@ -708,32 +691,28 @@ if($db->connect_errno != 0) {
                                     <?php
                                     $statStmt->data_seek(0);
                                     while($statStmt->fetch()) {
-                                        $time = sprintf("%d:%02d", $Stat_TimeMin, $Stat_TimeSec);
-                                        echo "<option value=\"$Stat_ID\">Game Stat - $time - $Stat_Points pts</option>\n";
+                                       
+                                        echo "<option value=\"$Stat_ID\">Game Stat - $Stat_diff_score pts</option>\n";
+                                        #look into this
                                     }
                                     ?>
                                 </select>
                             </td>
                         </tr>
-
+                                    <!-- look into this -->
                         <tr>
-                            <td class="form-label">Playing Time (min:sec)</td>
-                            <td class="form-field"><input type="text" name="time" id="playerPlayingTime" value="" maxlength="5" placeholder="00:00"/></td>
+                            <td class="form-label">Difficulty Score</td>
+                            <td class="form-field"><input type="text" name="diff_score" id="playerdiff_score" value="" maxlength="3"/></td>
                         </tr>
 
                         <tr>
-                            <td class="form-label">Points Scored</td>
-                            <td class="form-field"><input type="text" name="points" id="playerPoints" value="" maxlength="3"/></td>
+                            <td class="form-label">Execution Score</td>
+                            <td class="form-field"><input type="text" name="exec_score" id="playerexec_score" value="" maxlength="2"/></td>
                         </tr>
 
                         <tr>
-                            <td class="form-label">Assists</td>
-                            <td class="form-field"><input type="text" name="assists" id="playerAssists" value="" maxlength="2"/></td>
-                        </tr>
-
-                        <tr>
-                            <td class="form-label">Rebounds</td>
-                            <td class="form-field"><input type="text" name="rebounds" id="playerRebounds" value="" maxlength="2"/></td>
+                            <td class="form-label">Final Score</td>
+                            <td class="form-field"><input type="text" name="fin_score" id="playerfin_score" value="" maxlength="2"/></td>
                         </tr>
 
                         <tr>
@@ -776,10 +755,9 @@ if($db->connect_errno != 0) {
                 <th><i class="fas fa-user"></i> Name</th>
                 <th><i class="fas fa-map-marker-alt"></i> Address</th>
                 <th><i class="fas fa-gamepad"></i> Games</th>
-                <th><i class="far fa-clock"></i> Time</th>
-                <th><i class="fas fa-star"></i> Points</th>
-                <th><i class="fas fa-hands-helping"></i> Assists</th>
-                <th><i class="fas fa-hand-rock"></i> Rebounds</th>
+                <th><i class="fas fa-star"></i> Difficulty Score</th>
+                <th><i class="fas fa-hands-helping"></i> Execution Score</th>
+                <th><i class="fas fa-hand-rock"></i> Final Score</th>
             </tr>
         </thead>
         <tbody>
@@ -790,7 +768,8 @@ if($db->connect_errno != 0) {
             while($stmt->fetch()) {
                 // construct Address and PlayerStatistic objects
                 $player = new Address([$Name_First, $Name_Last], $Street, $City, $State, $Country, $ZipCode);
-                $stat = new PlayerStatistic([$Name_First, $Name_Last], [$PlayingTimeMin, $PlayingTimeSec], $Points, $Assists, $Rebounds);
+                $stat = new PlayerStatistic([$Name_First, $Name_Last], $diff_score, $exec_score, $fin_score);
+                #look into this
 
                 echo '<tr>';
                 echo '<td>' . ++$row_number . '</td>';
@@ -799,12 +778,11 @@ if($db->connect_errno != 0) {
                     . htmlspecialchars($player->city() . ', ' . $player->state() . ' ' . $player->zip()) . '<br>'
                     . htmlspecialchars($player->country()) . '</td>';
                 echo '<td>' . $GamesPlayed . '</td>';
-                
+                // look into this
                 if($GamesPlayed > 0) {
-                    echo '<td>' . htmlspecialchars($stat->playingTime()) . '</td>';
-                    echo '<td>' . htmlspecialchars($stat->pointsScored()) . '</td>';
-                    echo '<td>' . htmlspecialchars($stat->assists()) . '</td>';
-                    echo '<td>' . htmlspecialchars($stat->rebounds()) . '</td>';
+                    echo '<td>' . htmlspecialchars($stat->diff_score()) . '</td>';
+                    echo '<td>' . htmlspecialchars($stat->exec_score()) . '</td>';
+                    echo '<td>' . htmlspecialchars($stat->fin_score()) . '</td>';
                 } else {
                     echo '<td class="empty-cell"></td>';
                     echo '<td class="empty-cell"></td>';
@@ -905,25 +883,24 @@ if($db->connect_errno != 0) {
         // Generate JavaScript code to populate form with statistic data
         $statStmt->data_seek(0);
         echo "var statData = {\n";
+        // look into this
         while ($statStmt->fetch()) {
             echo "  '$Stat_ID': {\n";
             echo "    player: '$Stat_Player',\n";
-            echo "    time: '" . sprintf("%d:%02d", $Stat_TimeMin, $Stat_TimeSec) . "',\n";
-            echo "    points: '$Stat_Points',\n";
-            echo "    assists: '$Stat_Assists',\n";
-            echo "    rebounds: '$Stat_Rebounds'\n";
+            echo "    diff_score: '$Stat_diff_score',\n";
+            echo "    exec_score: '$Stat_exec_score',\n";
+            echo "    fin_score: '$Stat_fin_score'\n";
             echo "  },\n";
         }
         echo "};\n";
         ?>
-
+        //look into this
         // Fill the form with selected statistic data
         var stat = statData[statID];
         document.getElementById('playerStats').value = stat.player;
-        document.getElementById('playingTime').value = stat.time;
-        document.getElementById('points').value = stat.points;
-        document.getElementById('assists').value = stat.assists;
-        document.getElementById('rebounds').value = stat.rebounds;
+        document.getElementById('diff_score').value = stat.diff_score;
+        document.getElementById('exec_score').value = stat.exec_score;
+        document.getElementById('fin_score').value = stat.fin_score;
     }
 
     // Function to handle statistic deletion for Manager
@@ -944,6 +921,7 @@ if($db->connect_errno != 0) {
         if (!statID) return;
 
     <?php
+    //look into this
     // Generate JavaScript code to populate coach's form with statistic data
     $statStmt->data_seek(0);
     echo "var coachStatData = {\n";
@@ -951,23 +929,21 @@ if($db->connect_errno != 0) {
         echo "  '$Stat_ID': {\n";
         echo "    player: '$Stat_Player',\n";
         echo "    playerName: '" . addslashes("$Stat_FirstName $Stat_LastName") . "',\n";
-        echo "    time: '" . sprintf("%d:%02d", $Stat_TimeMin, $Stat_TimeSec) . "',\n";
-        echo "    points: '$Stat_Points',\n";
-        echo "    assists: '$Stat_Assists',\n";
-        echo "    rebounds: '$Stat_Rebounds'\n";
+        echo "    diff_score: '$Stat_diff_score',\n";
+        echo "    exec_score: '$Stat_exec_score',\n";
+        echo "    fin_score: '$Stat_fin_score'\n";
         echo "  },\n";
     }
     echo "};\n";
     ?>
-
+        //look into this
         // Fill the form with selected statistic data
         var stat = coachStatData[statID];
         document.getElementById('coachStatPlayerName').textContent = stat.playerName;
         document.getElementById('coachPlayerID').value = stat.player;
-        document.getElementById('coachPlayingTime').value = stat.time;
-        document.getElementById('coachPoints').value = stat.points;
-        document.getElementById('coachAssists').value = stat.assists;
-        document.getElementById('coachRebounds').value = stat.rebounds;
+        document.getElementById('coachdiff_score').value = stat.diff_score;
+        document.getElementById('coachexec_score').value = stat.exec_score;
+        document.getElementById('coachfin_score').value = stat.fin_score;
     }
     <?php endif; ?>
 
@@ -996,23 +972,23 @@ if($db->connect_errno != 0) {
         // Generate JavaScript code to populate player's form with statistic data
         $statStmt->data_seek(0);
         echo "var playerStatData = {\n";
+        #look into this too
         while ($statStmt->fetch()) {
             echo "  '$Stat_ID': {\n";
-            echo "    time: '" . sprintf("%d:%02d", $Stat_TimeMin, $Stat_TimeSec) . "',\n";
-            echo "    points: '$Stat_Points',\n";
-            echo "    assists: '$Stat_Assists',\n";
-            echo "    rebounds: '$Stat_Rebounds'\n";
+            echo "    diff_score: '$Stat_diff_score',\n";
+            echo "    exec_score: '$Stat_exec_score',\n";
+            echo "    fin_score: '$Stat_fin_score'\n";
             echo "  },\n";
         }
         echo "};\n";
         ?>
-
+        // look into this
         // Fill the form with selected statistic data
         var stat = playerStatData[statID];
         document.getElementById('playerPlayingTime').value = stat.time;
-        document.getElementById('playerPoints').value = stat.points;
-        document.getElementById('playerAssists').value = stat.assists;
-        document.getElementById('playerRebounds').value = stat.rebounds;
+        document.getElementById('playerdiff_score').value = stat.diff_score;
+        document.getElementById('playerexec_score').value = stat.exec_score;
+        document.getElementById('playerfin_score').value = stat.fin_score;
     }
 
     // Function to handle statistic deletion for Player
