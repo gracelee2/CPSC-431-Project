@@ -31,13 +31,10 @@ if($db->connect_errno != 0) {
         require_once('PlayerStatistic.php');
 
         // Create new object delegating parameter sanitization to class constructor
-        $playerStat = new PlayerStatistic(NULL, $_POST['time'], $_POST['points'], $_POST['assists'], $_POST['rebounds']);
-
-        // Parse playing time
-        list($minutes, $seconds) = explode(':', $playerStat->playingTime());
+        $playerStat = new PlayerStatistic(NULL, $_POST['diff_score'], $_POST['exec_score'], $_POST['fin_score']);
         
         // Call the stored procedure for player to add their own statistics
-        $query = "CALL InsertPlayerStatistic(?, ?, ?, ?, ?, ?)";
+        $query = "CALL InsertPlayerStatistic(?, ?, ?, ?, ?)";
         $stmt = $db->prepare($query);
         
         if (!$stmt) {
@@ -48,11 +45,9 @@ if($db->connect_errno != 0) {
         
         $stmt->bind_param('siiiis',
             $username,
-            $minutes,
-            $seconds,
-            $playerStat->pointsScored(),
-            $playerStat->assists(),
-            $playerStat->rebounds());
+            $playerStat->diff_score(),
+            $playerStat->exec_score(),
+            $playerStat->fin_score());
             
         $result = $stmt->execute();
         
