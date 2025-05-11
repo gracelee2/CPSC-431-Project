@@ -9,52 +9,47 @@ requireLogin();
 $userRole = getUserRole();
 
 // Restrict access based on role
-if ($userRole !== 'manager') {
-  header("Location: unauthorized.php");
-  exit;
+// Both Manager and Coach can modify statistics, but player permissions are handled elsewhere
+if ($userRole !== 'manager' && $userRole !== 'coach') {
+    header("Location: unauthorized.php");
+    exit;
 }
 
-$playerID = (int) $_POST['name_ID'];  // Database unique ID for player's name
+// Get form data
+$statID   = isset($_POST['stat_ID']) ? (int)$_POST['stat_ID'] : 0;
+$playerID = isset($_POST['name_ID']) ? (int)$_POST['name_ID'] : 0;
+$diff_score   = (int)$_POST['diff_score'];
+$exec_score  = (int)$_POST['exec_score'];
+$fin_score = (int)$_POST['fin_score'];
 
-if($playerID != 0)  // Verify required fields are present
-{
-  // Connect to database with role-specific credentials
-  require_once('Adaptation.php');
-  @$db = createDatabaseConnection($userRole);
+// Verify required fields
+if($statID > 0 && $playerID > 0) {
+    // Connect to database with role-specific credentials
+    require_once('Adaptation.php');
+    @$db = createDatabaseConnection($userRole);
 
-  // if connection was successful
-  if($db->connect_errno != 0)
-  {
-    echo "Error: Failed to make a MySQL connection, here is why: <br/>";
-    echo "Errno: " . $db->connect_errno . "<br/>";
-    echo "Error: " . $db->connect_error . "<br/>";
-  }
-  else // Connection succeeded
-  {
-    require_once('PlayerStatistic.php');
+    if($db->connect_errno != 0) {
+        echo "Error: Failed to make a MySQL connection, here is why: <br/>";
+        echo "Errno: " . $db->connect_errno . "<br/>";
+        echo "Error: " . $db->connect_error . "<br/>";
+    } else {
 
-    // Create new object delegating parameter sanitization to class constructor
-    $playerStat = new PlayerStatistic(NULL, $_POST['time'], $_POST['points'], $_POST['assists'], $_POST['rebounds']);
+        // Update existing statistic
+        $query = "UPDATE Statistics SET 
+                  Difficulty_Score = ?,
+                  Execution_Score = ?,
+                  Final_Score = ?
+                  WHERE ID = ? AND Player = ?";
 
-    $query = "INSERT INTO Statistics SET
-                Player          = ?,
-                PlayingTimeMin  = ?,
-                PlayingTimeSec  = ?,
-                Points          = ?,
-                Assists         = ?,
-                Rebounds        = ?";
+        $stmt = $db->prepare($query);
+        $stmt->bind_param('iiiiiii', $diff_score, $exec_score, $fin_score, $statID, $playerID);
+        $stmt->execute();
 
-    $stmt = $db->prepare($query);
-
-    list($minutes, $seconds) = explode(':', $playerStat->playingTime());
-    $stmt->bind_param('dddddd', $playerID,
-        $minutes,
-        $seconds,
-        $playerStat->pointsScored(),
-        $playerStat->assists(),
-        $playerStat->rebounds());
-    @$stmt->execute(); // ignore errors, for now.
-  }
+        if($stmt->affected_rows == 0) {
+            echo "No changes were made or record not found.";
+        }
+        $stmt->close();
+    }
 }
 
 // Redirect back to home page
