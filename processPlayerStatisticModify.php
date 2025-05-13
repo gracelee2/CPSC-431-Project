@@ -17,10 +17,10 @@ if ($userRole !== 'player' || !isset($currentUser['player_id'])) {
 
 // Get form data
 $statID   = isset($_POST['stat_ID']) ? (int)$_POST['stat_ID'] : 0;
-$time     = $_POST['time'];
-$points   = (int)$_POST['diff_score'];
-$assists  = (int)$_POST['exec_score'];
-$rebounds = (int)$_POST['fin_score'];
+$playerStat = new PlayerStatistic(null, $_POST['diff_score'], $_POST['exec_score'], $_POST['fin_score']);
+$diff     = $playerStat->diff_score();
+    $exec     = $playerStat->exec_score();
+    $fin      = $playerStat->fin_score();
 
 // Verify required fields
 if($statID > 0) {
@@ -39,7 +39,7 @@ if($statID > 0) {
 
 
             // Call the stored procedure for player to update their own statistics
-            $query = "CALL UpdatePlayerStatistic(?, ?, ?, ?, ?)";
+            $query = "CALL UpdatePlayerStatistic(?, ?, ?, ?,?)";
             $stmt = $db->prepare($query);
             
             if (!$stmt) {
@@ -48,12 +48,12 @@ if($statID > 0) {
             
             $username = $currentUser['username'];
 
-            $stmt->bind_param('siiiiis',
+            $stmt->bind_param('siiii',
                 $username,
                 $statID,
-                $diff_score,
-                $exec_score,
-                $fin_score);
+                $diff,
+                $exec,
+                $fin);
                 
             $result = $stmt->execute();
             
