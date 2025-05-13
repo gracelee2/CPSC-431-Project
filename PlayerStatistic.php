@@ -210,12 +210,6 @@ class PlayerStatistic
    }
 
 
-
-
-
-
-
-
    // Sets instance attributes to the contents of a string containing ordered, tab separated values
    function fromTSV(string $tsvString)
    {
