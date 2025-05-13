@@ -3,7 +3,7 @@ require_once('config.php');
 require_once('auth.php');
 
 // Require user to be logged in to access the page
-requireLogin();
+//requireLogin();
 
 // Get current user and role
 $currentUser = getCurrentUser();
@@ -326,18 +326,18 @@ $userRole = getUserRole();
 <!-- User info and logout header -->
 <div class="header-bar">
     <div class="user-info">
-        <?php if(isLoggedIn()): ?>
+        <?php if (isLoggedIn()): ?>
             <i class="fas fa-user-circle"></i>
             Logged in as: <strong><?php echo htmlspecialchars($currentUser['username']); ?></strong>
             (<?php echo htmlspecialchars(ucfirst($userRole)); ?>)
-            <?php if(isset($currentUser['player_name'])): ?>
+            <?php if (isset($currentUser['player_name'])): ?>
                 - Player: <?php echo htmlspecialchars($currentUser['player_name']); ?>
             <?php endif; ?>
+            <a href="auth.php?logout=1"><i class="fas fa-sign-out-alt"></i> Logout</a>
+        <?php else: ?>
+            <a href="login.php"><i class="fas fa-sign-in-alt"></i> Login</a>
         <?php endif; ?>
     </div>
-    <?php if(isLoggedIn()): ?>
-        <a href="auth.php?logout=1"><i class="fas fa-sign-out-alt"></i> Logout</a>
-    <?php endif; ?>
 </div>
 
 <h1 class="app-title">Cal State Fullerton Basketball Statistics</h1>
