@@ -19,48 +19,45 @@ if ($userRole !== 'player' || !isset($currentUser['player_id'])) {
 require_once('Adaptation.php');
 @$db = createDatabaseConnection($userRole);
 
-// if connection was successful
 if($db->connect_errno != 0) {
-    // Log error details
     error_log("Database connection failed in processPlayerStatistic.php: " . $db->connect_error);
-    // Show error page
     header("Location: error.php?message=" . urlencode("Database connection failed. Please try again later."));
     exit;
-} else {
-    try {
-        require_once('PlayerStatistic.php');
+}
 
-        // Create new object delegating parameter sanitization to class constructor
-        $playerStat = new PlayerStatistic(NULL, $_POST['diff_score'], $_POST['exec_score'], $_POST['fin_score']);
-        
-        // Call the stored procedure for player to add their own statistics
-        $query = "CALL InsertPlayerStatistic(?, ?, ?, ?, ?)";
-        $stmt = $db->prepare($query);
-        
-        if (!$stmt) {
-            throw new Exception("Prepare failed: " . $db->error);
-        }
-        
-        $username = $currentUser['username'];
-        
-        $stmt->bind_param('siiiis',
-            $username,
-            $playerStat->diff_score(),
-            $playerStat->exec_score(),
-            $playerStat->fin_score());
-            
-        $result = $stmt->execute();
-        
-        if (!$result) {
-            throw new Exception("Execute failed: " . $stmt->error);
-        }
-        
-        $stmt->close();
-    } catch (Exception $e) {
-        error_log("Error in processPlayerStatistic.php: " . $e->getMessage());
-        header("Location: error.php?message=" . urlencode("An error occurred while adding your statistic."));
-        exit;
+try {
+    require_once('PlayerStatistic.php');
+
+    // Get sanitized stats
+    $playerStat = new PlayerStatistic(NULL, $_POST['diff_score'], $_POST['exec_score'], $_POST['fin_score']);
+
+    // Prepare SQL call to stored procedure
+    $query = "CALL InsertPlayerStatistic(?, ?, ?, ?, ?)";
+    $stmt = $db->prepare($query);
+    
+    if (!$stmt) {
+        throw new Exception("Prepare failed: " . $db->error);
     }
+
+    // Get required data
+    $username = $currentUser['username'];
+    $playerID = (int) $currentUser['player_id'];
+    $diff     = $playerStat->diff_score();
+    $exec     = $playerStat->exec_score();
+    $fin      = $playerStat->fin_score();
+
+    // Bind parameters (s = string, i = int, d = double)
+    $stmt->bind_param('siddd', $username, $playerID, $diff, $exec, $fin);
+
+    if (!$stmt->execute()) {
+        throw new Exception("Execute failed: " . $stmt->error);
+    }
+
+    $stmt->close();
+} catch (Exception $e) {
+    error_log("Error in processPlayerStatistic.php: " . $e->getMessage());
+    header("Location: error.php?message=" . urlencode("An error occurred while adding your statistic."));
+    exit;
 }
 
 // Redirect back to home page
