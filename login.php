@@ -1,212 +1,174 @@
 <?php
-require_once('auth.php');
+// Start session to maintain login state
+session_start();
 
-///////////////////////
+// Include database connection information
+require_once('config.php');
+require_once('Adaptation.php');
 
-<?php
-  require_once( 'startSession.php' );
+/**
+ * Authenticate user against database credentials
+ *
+ * @param string $username The username to authenticate
+ * @param string $password The password to authenticate
+ * @return array|false Returns user info array if authenticated, false otherwise
+ */
+function authenticateUser($username, $password) {
+    // Create database connection using the auth-specific function
+    $db = createAuthConnection();
 
-  // Check if user is already logged in
-if(isLoggedIn()) {
-    // Redirect to home page or requested page
-    $redirect = isset($_SESSION['redirect_url']) ? $_SESSION['redirect_url'] : 'home_page.php';
-    unset($_SESSION['redirect_url']);
-    header("Location: $redirect");
-    exit;
-}
+    if($db->connect_errno != 0) {
+        error_log("Database connection failed: " . $db->connect_error);
+        return false;
+    }
 
-  $query = "SELECT 
-              Roles.roleName, UserLogin.Password 
-            FROM 
-              UserLogin, Roles 
-             WHERE
-                UserName = ?  AND
-                UserLogin.Role = Roles.ID_Role";
-  
-  if( ($stmt = $db->prepare($query)) === FALSE )
-  {
-    echo "Error: failed to prepare query: ". $db->error . "<br/>";
-    return -2;
-  }
+    // Determine which authentication to use based on username
+    if($username === 'Manager' || $username === 'Coach' || $username === 'Player') {
+        // These are special system users, authenticate directly
+        // In a real system, you would never do this. All passwords should be hashed.
+        // This is a simplified example for the homework assignment
+        $predefined_users = [
+            'Manager' => ['password' => 'Manager_Pass123!', 'role' => 'manager'],
+            'Coach' => ['password' => 'Coach_Pass123!', 'role' => 'coach'],
+            'Player' => ['password' => 'Player_Pass123!', 'role' => 'player']
+        ];
 
-  if( ($stmt->bind_param('s', $userName)) === FALSE )
-  {
-    echo "Error: failed to bind query parameters to query: ". $db->error . "<br/>";
-    return -3;
-  }
+        if(isset($predefined_users[$username]) && $predefined_users[$username]['password'] === $password) {
+            // For a generic Player account, we need to determine which player they are
+            if($username === 'Player') {
+                // Try to find a player linked to this user account
+                $query = "SELECT ID, Name_First, Name_Last FROM TeamRoster WHERE UserAccount = ?";
+                $stmt = $db->prepare($query);
+                $stmt->bind_param('s', $username);
+                $stmt->execute();
+                $stmt->store_result();
 
-  if( !($stmt->execute() && $stmt->store_result() && $stmt->num_rows === 1) )
-  {
-    echo "Login attempt failed<br/>";
-    // echo "Failure: existing user '$userName' not found<br/>";
-    echo "-- display login form --<br/>";
-    return -4;
-  }
-  
-  if( ($stmt->bind_result($roleName, $PWHash)) === FALSE )
-  {
-    echo "Error: failed to bind query results to local variables: ". $db->error . "<br/>";
-    return -5;
-  }
+                if($stmt->num_rows > 0) {
+                    $stmt->bind_result($player_id, $first_name, $last_name);
+                    $stmt->fetch();
 
-  
-  if( ($stmt->fetch()) === FALSE )
-  {
-    echo "Error: failed to fetch query results: ". $db->error . "<br/>";
-    return -6;
-  }
-  
-  if (! password_verify($password, $PWHash)) 
-  {
-    echo "Login attempt failed<br/>";
-    // echo 'Password is valid!';
-    echo "-- display login form --<br/>";
-    return -7;
-  }
-  
-  // Login successful at this point, do some book keeping ...
-  echo "Login successful for user '$userName' as '$roleName'<br/>";
-  $_SESSION['UserName'] = $userName;
-  $_SESSION['UserRole'] = $roleName;
-?>
+                    return [
+                        'username' => $username,
+                        'role' => $predefined_users[$username]['role'],
+                        'player_id' => $player_id,
+                        'player_name' => "$first_name $last_name"
+                    ];
+                }
+            }
 
-
-
-
-//////////////////////
-
-// Check if user is already logged in
-if(isLoggedIn()) {
-    // Redirect to home page or requested page
-    $redirect = isset($_SESSION['redirect_url']) ? $_SESSION['redirect_url'] : 'home_page.php';
-    unset($_SESSION['redirect_url']);
-    header("Location: $redirect");
-    exit;
-}
-
-$error = '';
-
-// Process login form submission
-if($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $username = trim($_POST['username'] ?? '');
-    $password = password_hash($_POST['password'] ?? '', PASSWORD_DEFAULT);
-
-    if(empty($username) || empty($password)) {
-        $error = 'Please enter both username and password.';
-    } else {
-        // Attempt to authenticate user
-        $user = authenticateUser($username, $password);
-
-        if($user) {
-            // Store user data in session
-            $_SESSION['user'] = $user;
-
-            // Redirect to home page or requested page
-            $redirect = isset($_SESSION['redirect_url']) ? $_SESSION['redirect_url'] : 'home_page.php';
-            unset($_SESSION['redirect_url']);
-            header("Location: $redirect");
-            exit;
-        } else {
-            $error = 'Invalid username or password.';
+            return [
+                'username' => $username,
+                'role' => $predefined_users[$username]['role']
+            ];
         }
+    } else {
+        // This would be for custom player accounts, if you implemented them
+        // In a real system, you would verify against a users table with hashed passwords
+        return false;
+    }
+
+    return false;
+}
+
+/**
+ * Check if user is currently logged in
+ *
+ * @return bool Returns true if user is logged in, false otherwise
+ */
+function isLoggedIn() {
+    return isset($_SESSION['user']);
+}
+
+/**
+ * Get current logged in user information
+ *
+ * @return array|null Returns user info array if logged in, null otherwise
+ */
+function getCurrentUser() {
+    return isLoggedIn() ? $_SESSION['user'] : null;
+}
+
+/**
+ * Get current user's role
+ *
+ * @return string|null Returns user role if logged in, null otherwise
+ */
+function getUserRole() {
+    $user = getCurrentUser();
+    return $user ? $user['role'] : null;
+}
+
+/**
+ * Check if current user has specific role
+ *
+ * @param string $role The role to check for
+ * @return bool Returns true if user has the role, false otherwise
+ */
+function hasRole($role) {
+    $userRole = getUserRole();
+    return $userRole === $role;
+}
+
+/**
+ * Check if current user is a specific player
+ *
+ * @param int $player_id The player ID to check
+ * @return bool Returns true if user is the specified player, false otherwise
+ */
+function isPlayer($player_id) {
+    $user = getCurrentUser();
+    return ($user && $user['role'] === 'player' && $user['player_id'] === $player_id);
+}
+
+/**
+ * Require user to be logged in to access page
+ * Redirects to login page if not logged in
+ */
+function requireLogin() {
+    if(!isLoggedIn()) {
+        // Save requested URL for redirect after login
+        $_SESSION['redirect_url'] = $_SERVER['REQUEST_URI'];
+        header("Location: login.php");
+        exit;
     }
 }
+
+/**
+ * Require user to have specific role to access page
+ * Redirects to login page if not logged in or unauthorized
+ *
+ * @param string|array $roles Single role or array of allowed roles
+ */
+function requireRole($roles) {
+    requireLogin();
+
+    // Convert single role to array for uniform processing
+    if(!is_array($roles)) {
+        $roles = [$roles];
+    }
+
+    $userRole = getUserRole();
+    if(!in_array($userRole, $roles)) {
+        header("Location: unauthorized.php");
+        exit;
+    }
+}
+
+/**
+ * Log user out and redirect to login page
+ */
+function logout() {
+    // Destroy the session
+    session_unset();
+    session_destroy();
+
+    // Redirect to login page
+    header("Location: login.php");
+    exit;
+}
+
+// If auth.php is called directly with logout parameter, log out
+if(isset($_GET['logout'])) {
+    logout();
+}
 ?>
-
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Login - Gymnastics Statistics</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 20px;
-            background-color: #f4f4f4;
-        }
-        .login-container {
-            max-width: 400px;
-            margin: 50px auto;
-            background: white;
-            padding: 20px;
-            border-radius: 5px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-        }
-        h1 {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        .form-group {
-            margin-bottom: 15px;
-        }
-        label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
-        }
-        input[type="text"],
-        input[type="password"] {
-            width: 100%;
-            padding: 8px;
-            box-sizing: border-box;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-        }
-        input[type="submit"] {
-            background-color: #4CAF50;
-            color: white;
-            padding: 10px 15px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 16px;
-        }
-        input[type="submit"]:hover {
-            background-color: #45a049;
-        }
-        .error {
-            color: red;
-            margin-bottom: 15px;
-        }
-        .note {
-            margin-top: 20px;
-            font-size: 14px;
-            color: #666;
-        }
-    </style>
-</head>
-<body>
-<div class="login-container">
-    <h1>Gymnastics Statistics Login</h1>
-
-    <?php if(!empty($error)): ?>
-        <div class="error"><?php echo htmlspecialchars($error); ?></div>
-    <?php endif; ?>
-
-    <form method="post">
-        <div class="form-group">
-            <label for="username">Username:</label>
-            <input type="text" id="username" name="username" required>
-        </div>
-
-        <div class="form-group">
-            <label for="password">Password:</label>
-            <input type="password" id="password" name="password" required>
-        </div>
-
-        <div class="form-group">
-            <input type="submit" value="Login">
-        </div>
-    </form>
-
-    <div class="note">
-        <p><strong>Available Users:</strong></p>
-        <ul>
-            <li>Manager - Full access to players and statistics</li>
-            <li>Coach - Maintain team roster, update player statistics</li>
-            <li>Player - Maintain personal statistics and address</li>
-        </ul>
-    </div>
-</div>
-</body>
-</html>
