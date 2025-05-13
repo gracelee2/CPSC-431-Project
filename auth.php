@@ -124,7 +124,6 @@ function isPlayer($player_id) {
  * Require user to be logged in to access page
  * Redirects to login page if not logged in
  */
-
 function requireLogin() {
     if(!isLoggedIn()) {
         // Save requested URL for redirect after login
