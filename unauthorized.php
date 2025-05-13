@@ -10,7 +10,7 @@ $user = getCurrentUser();
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Unauthorized Access - Gymnastics Statistics</title>
+    <title>Unauthorized Access - Basketball Statistics</title>
     <style>
         body {
             font-family: Arial, sans-serif;
