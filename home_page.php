@@ -340,7 +340,7 @@ $userRole = getUserRole();
     </div>
 </div>
 
-<h1 class="app-title">Cal State Fullerton Basketball Statistics</h1>
+<h1 class="app-title">Cal State Fullerton Gymnastics Statistics</h1>
 
 <div class="main-container">
 <?php
@@ -717,7 +717,7 @@ if($db->connect_errno != 0) {
 
                         <tr>
                             <td colspan="2" class="actions-container">
-                                <button type="submit" class="btn btn-update"><i class="fas fa-basketball-ball"></i> Add/Modify My Statistic</button>
+                                <button type="submit" class="btn btn-update"><i class="fas fa-Gymnastics-ball"></i> Add/Modify My Statistic</button>
                                 <button type="button" onclick="deletePlayerStat()" id="playerDeleteStatBtn" class="btn btn-delete" disabled><i class="fas fa-trash-alt"></i> Delete Statistic</button>
                             </td>
                         </tr>
