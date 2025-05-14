@@ -31,17 +31,11 @@ CREATE TABLE Statistics
 (
     ID                INTEGER    UNSIGNED  NOT NULL  AUTO_INCREMENT PRIMARY KEY,
     Player            INTEGER    UNSIGNED  NOT NULL,
-    PlayingTimeMin    TINYINT(2) UNSIGNED  DEFAULT 0 COMMENT 'Two 20-minute halves',
-    PlayingTimeSec    TINYINT(2) UNSIGNED  DEFAULT 0,
-    Points            TINYINT    UNSIGNED  DEFAULT 0,
-    Assists           TINYINT    UNSIGNED  DEFAULT 0,
-    Rebounds          TINYINT    UNSIGNED  DEFAULT 0,
+    Difficulty_Score            TINYINT    UNSIGNED  DEFAULT 0,
+    Execution_Score             TINYINT    UNSIGNED  DEFAULT 0,
+    Final_Score                 TINYINT    UNSIGNED  DEFAULT 0,
 
-    FOREIGN KEY (Player) REFERENCES TeamRoster(ID) ON DELETE CASCADE,
-
-    CHECK((PlayingTimeMin =  0             AND PlayingTimeSec BETWEEN 1 AND 59) OR
-          (PlayingTimeMin BETWEEN 1 AND 39 AND PlayingTimeSec BETWEEN 0 AND 59) OR
-          (PlayingTimeMin = 40             AND PlayingTimeSec = 0             ))
+    FOREIGN KEY (Player) REFERENCES TeamRoster(ID) ON DELETE CASCADE
 );
 
 -- Create a view for players to see only their own stats
@@ -51,11 +45,9 @@ SELECT
     Statistics.Player,
     TeamRoster.Name_First,
     TeamRoster.Name_Last,
-    Statistics.PlayingTimeMin,
-    Statistics.PlayingTimeSec,
-    Statistics.Points,
-    Statistics.Assists,
-    Statistics.Rebounds,
+    Statistics.Difficulty_Score,
+    Statistics.Execution_Score,
+    Statistics.Final_Score,
     TeamRoster.UserAccount
 FROM Statistics
          JOIN TeamRoster ON Statistics.Player = TeamRoster.ID;
@@ -80,11 +72,9 @@ DELIMITER //
 -- Procedure for a player to insert their own statistics
 CREATE PROCEDURE InsertPlayerStatistic(
     IN p_username VARCHAR(50),
-    IN p_playingTimeMin TINYINT(2),
-    IN p_playingTimeSec TINYINT(2),
-    IN p_points TINYINT,
-    IN p_assists TINYINT,
-    IN p_rebounds TINYINT
+    IN p_diffScore TINYINT,
+    IN p_execScore TINYINT,
+    IN p_finScore TINYINT
         )
 BEGIN
   DECLARE player_id INT;
@@ -97,18 +87,14 @@ WHERE UserAccount = p_username;
 IF player_id IS NOT NULL THEN
     INSERT INTO Statistics (
       Player,
-      PlayingTimeMin,
-      PlayingTimeSec,
-      Points,
-      Assists,
-      Rebounds
+      Difficulty_Score,
+      Execution_Score,
+      Final_Score
     ) VALUES (
       player_id,
-      p_playingTimeMin,
-      p_playingTimeSec,
-      p_points,
-      p_assists,
-      p_rebounds
+      p_diffScore,
+      p_execScore,
+      p_finScore
     );
 END IF;
 END //
@@ -117,11 +103,9 @@ END //
 CREATE PROCEDURE UpdatePlayerStatistic(
     IN p_username VARCHAR(50),
     IN p_stat_id INT,
-    IN p_playingTimeMin TINYINT(2),
-    IN p_playingTimeSec TINYINT(2),
-    IN p_points TINYINT,
-    IN p_assists TINYINT,
-    IN p_rebounds TINYINT
+    IN p_diffScore TINYINT,
+    IN p_execScore TINYINT,
+    IN p_finScore TINYINT
         )
 BEGIN
   DECLARE player_id INT;
@@ -133,11 +117,9 @@ WHERE UserAccount = p_username;
 
 IF player_id IS NOT NULL THEN
 UPDATE Statistics SET
-                      PlayingTimeMin = p_playingTimeMin,
-                      PlayingTimeSec = p_playingTimeSec,
-                      Points = p_points,
-                      Assists = p_assists,
-                      Rebounds = p_rebounds
+                      Difficulty_Score = p_diffScore,
+                      Execution_Score = p_execScore,
+                      Final_Score = p_finScore
 WHERE ID = p_stat_id AND Player = player_id;
 END IF;
 END //
@@ -196,22 +178,22 @@ INSERT INTO TeamRoster VALUES
                            ('131', 'Della',                'Duck',    '77700 Boulevard du Parc', 'Coupvray',           'Disney Paris',  'France',  NULL, NULL);
 
 INSERT INTO Statistics VALUES
-                           ('17', '100', '35', '12', '47', '11', '21'),
-                           ('18', '107', '13', '22', '13', '01', '03'),
-                           ('19', '111', '10', '00', '18', '02', '04'),
-                           ('20', '128', '02', '45', '09', '01', '02'),
-                           ('21', '107', '15', '39', '26', '03', '07'),
-                           ('22', '100', '29', '47', '27', '09', '08');
+                           ('17', '100', '47', '11', '21'),
+                           ('18', '107', '13', '01', '03'),
+                           ('19', '111', '18', '02', '04'),
+                           ('20', '128', '09', '01', '02'),
+                           ('21', '107', '26', '03', '07'),
+                           ('22', '100', '27', '09', '08');
 
 -- Drop existing users if they exist
-DROP USER IF EXISTS 'phpWebEngine'@'localhost';
+DROP USER IF EXISTS 'denno'@'localhost';
 DROP USER IF EXISTS 'Manager'@'localhost';
 DROP USER IF EXISTS 'Coach'@'localhost';
 DROP USER IF EXISTS 'Player'@'localhost';
 
 -- Create the main application user (for backward compatibility)
-CREATE USER 'phpWebEngine'@'localhost' IDENTIFIED BY '!_phpWebEngine';
-GRANT SELECT, INSERT, DELETE, UPDATE, EXECUTE ON CPSC_431_HW2.* TO 'phpWebEngine'@'localhost';
+CREATE USER 'denno'@'localhost' IDENTIFIED BY 'Dennis12345@';
+GRANT SELECT, INSERT, DELETE, UPDATE, EXECUTE ON CPSC_431_HW2.* TO 'denno'@'localhost';
 
 -- Create the Manager user with full privileges
 -- Manager can do whatever she wants
@@ -224,7 +206,7 @@ CREATE USER 'Coach'@'localhost' IDENTIFIED BY 'Coach_Pass123!';
 GRANT SELECT, INSERT, UPDATE, DELETE ON CPSC_431_HW2.TeamRoster TO 'Coach'@'localhost';
 -- Coach can view and update specific columns in Statistics (but not add or delete)
 GRANT SELECT ON CPSC_431_HW2.Statistics TO 'Coach'@'localhost';
-GRANT UPDATE (PlayingTimeMin, PlayingTimeSec, Points, Assists, Rebounds) ON CPSC_431_HW2.Statistics TO 'Coach'@'localhost';
+GRANT UPDATE (Difficulty_Score, Execution_Score, Final_Score) ON CPSC_431_HW2.Statistics TO 'Coach'@'localhost';
 
 -- Create the Player user with limited privileges
 -- Player can only maintain their own statistics and update their own address

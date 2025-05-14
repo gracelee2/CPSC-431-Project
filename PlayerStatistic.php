@@ -3,10 +3,9 @@ class PlayerStatistic
 {
    // Instance attributes
    private $name         = array('FIRST'=>"", 'LAST'=>null);
-   private $playingTime  = array('MINS' =>0,  'SECS'=>0);
-   private $pointsScored = 0;
-   private $assists      = 0;
-   private $rebounds     = 0;
+   private $diff_score = 0;
+   private $exec_score      = 0;
+   private $fin_score     = 0;
 
    // Operations
 
@@ -80,42 +79,7 @@ class PlayerStatistic
    //                                                 in [minutes, seconds] format
    //
    //   void playingTime(int $minutes, int $seconds)  set object's $playingTime attribute
-   function playingTime()
-   {
-     // string playingTime()
-     if( func_num_args() == 0 )
-     {
-       return $this->playingTime['MINS'].':'.$this->playingTime['SECS'];
-     }
-
-     // void playingTime($value)
-     else if( func_num_args() == 1 )
-     {
-       $value = func_get_arg(0);
-
-       if( is_string($value) ) $value = explode(':', $value); // convert string to array
-       if( is_array ($value) )
-       {
-         if ( count($value) >= 2 ) $this->playingTime['SECS'] = (int)$value[1];
-         else                      $this->playingTime['SECS'] = 0;
-         $this->playingTime['MINS'] = (int)$value[0];
-       }
-     }
-
-     // void playingTime($first_name, $last_name)
-     else if( func_num_args() == 2 )
-     {
-       $this->playingTime['MINS'] = (int)func_get_arg(0);
-       $this->playingTime['SECS'] = (int)func_get_arg(1);
-     }
-
-     return $this;
-   }
-
-
-
-
-
+   
 
 
 
@@ -123,18 +87,18 @@ class PlayerStatistic
    //   int pointsScored()               returns the number of points scored.
    //
    //   void pointsScored(int $value)    set object's $pointsScored attribute
-   function pointsScored()
+   function diff_score()
    {
      // int pointsScored()
      if( func_num_args() == 0 )
      {
-       return $this->pointsScored;
+       return $this->diff_score;
      }
 
      // void pointsScored($value)
      else if( func_num_args() == 1 )
      {
-       $this->pointsScored = (int)func_get_arg(0);
+       $this->diff_score = (int)func_get_arg(0);
      }
 
      return $this;
@@ -147,22 +111,22 @@ class PlayerStatistic
 
 
 
-   // assists() prototypes:
-   //   int assists()               returns the number of scoring assists.
+   // exec_score() prototypes:
+   //   int exec_score()               returns the number of scoring exec_score.
    //
-   //   void assists(int $value)    set object's $assists attribute
-   function assists()
+   //   void exec_score(int $value)    set object's $exec_score attribute
+   function exec_score()
    {
-     // int assists()
+     // int exec_score()
      if( func_num_args() == 0 )
      {
-       return $this->assists;
+       return $this->exec_score;
      }
 
-     // void assists($value)
+     // void exec_score($value)
      else if( func_num_args() == 1 )
      {
-       $this->assists = (int)func_get_arg(0);
+       $this->exec_score = (int)func_get_arg(0);
      }
 
      return $this;
@@ -175,22 +139,22 @@ class PlayerStatistic
 
 
 
-   // rebounds() prototypes:
-   //   int rebounds()               returns the number of rebounds taken.
+   // fin_score() prototypes:
+   //   int fin_score()               returns the number of fin_score taken.
    //
-   //   void rebounds(int $value)    set object's $rebounds attribute
-   function rebounds()
+   //   void fin_score(int $value)    set object's $fin_score attribute
+   function fin_score()
    {
-     // int rebounds()
+     // int fin_score()
      if( func_num_args() == 0 )
      {
-       return $this->rebounds;
+       return $this->fin_score;
      }
 
-     // void rebounds($value)
+     // void fin_score($value)
      else if( func_num_args() == 1 )
      {
-       $this->rebounds = (int)func_get_arg(0);
+       $this->fin_score = (int)func_get_arg(0);
      }
 
      return $this;
@@ -203,22 +167,21 @@ class PlayerStatistic
 
 
 
-   function __construct($name="", $time="0:0", $points=0, $assists=0, $rebounds=0)
+   function __construct($name="", $diff_score=0, $exec_score=0, $fin_score=0)
    {
      // if $name contains at least one tab character, assume all attributes are provided in
      // a tab separated list.  Otherwise assume $name is just the player's name.
      if( is_string($name) && strpos($name, "\t") !== false) // Note, can't check for "true" because strpos() only returns the boolean value "false", never "true"
      {
        // assign each argument a value from the tab delineated string respecting relative positions
-       list($name, $time, $points, $assists, $rebounds) = explode("\t", $name);
+       list($name,  $diff_score, $exec_score, $fin_score) = explode("\t", $name);
      }
 
      // delegate setting attributes so validation logic is applied
      $this->name($name);
-     $this->playingTime($time);
-     $this->pointsScored($points);
-     $this->assists($assists);
-     $this->rebounds($rebounds);
+     $this->diff_score($diff_score);
+     $this->exec_score($exec_score);
+     $this->fin_score($fin_score);
    }
 
 
@@ -243,26 +206,19 @@ class PlayerStatistic
    // Returns a tab separated value (TSV) string containing the contents of all instance attributes
    function toTSV()
    {
-       return implode("\t", [$this->name(), $this->playingTime(), $this->pointsScored(), $this->assists(), $this->rebounds()]);
+       return implode("\t", [$this->name(), $this->pointsScored(), $this->exec_score(), $this->fin_score()]);
    }
-
-
-
-
-
-
 
 
    // Sets instance attributes to the contents of a string containing ordered, tab separated values
    function fromTSV(string $tsvString)
    {
      // assign each argument a value from the tab delineated string respecting relative positions
-     list($name, $time, $points, $assists, $rebounds) = explode("\t", $tsvString);
+     list($name, $diff_score, $exec_score, $fin_score) = explode("\t", $tsvString);
      $this->name($name);
-     $this->playingTime($time);
-     $this->pointsScored($points);
-     $this->assists($assists);
-     $this->rebounds($rebounds);
+     $this->diff_score($diff_score);
+     $this->exec_score($exec_score);
+     $this->fin_score($fin_score);
    }
 } // end class PlayerStatistic
 

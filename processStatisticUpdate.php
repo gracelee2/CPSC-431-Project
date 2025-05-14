@@ -9,55 +9,47 @@ requireLogin();
 $userRole = getUserRole();
 
 // Restrict access based on role
-if ($userRole !== 'manager') {
-  header("Location: unauthorized.php");
-  exit;
+if ($userRole !== 'manager' && $userRole !== 'coach') {
+    header("Location: unauthorized.php");
+    exit;
 }
 
-$playerID = (int) $_POST['name_ID'];  // Database unique ID for player's name
+$playerID = (int) $_POST['name_ID'];
 
-if($playerID != 0)  // Verify required fields are present
-{
-  // Connect to database with role-specific credentials
-  require_once('Adaptation.php');
-  @$db = createDatabaseConnection($userRole);
+if ($playerID != 0) {
+    // Connect to database
+    require_once('Adaptation.php');
+    @$db = createDatabaseConnection($userRole);
 
-  // if connection was successful
-  if($db->connect_errno != 0)
-  {
-    echo "Error: Failed to make a MySQL connection, here is why: <br/>";
-    echo "Errno: " . $db->connect_errno . "<br/>";
-    echo "Error: " . $db->connect_error . "<br/>";
-  }
-  else // Connection succeeded
-  {
-    require_once('PlayerStatistic.php');
+    if ($db->connect_errno != 0) {
+        echo "Error: Failed to make a MySQL connection, here is why: <br/>";
+        echo "Errno: " . $db->connect_errno . "<br/>";
+        echo "Error: " . $db->connect_error . "<br/>";
+    } else {
+        require_once('PlayerStatistic.php');
 
-    // Create new object delegating parameter sanitization to class constructor
-    $playerStat = new PlayerStatistic(NULL, $_POST['time'], $_POST['points'], $_POST['assists'], $_POST['rebounds']);
+        // Sanitize and retrieve scores
+        $playerStat = new PlayerStatistic(NULL, $_POST['diff_score'], $_POST['exec_score'], $_POST['fin_score']);
+        $diff = (float)$playerStat->diff_score();
+        $exec = (float)$playerStat->exec_score();
+        $fin  = (float)$playerStat->fin_score();
 
-    $query = "INSERT INTO Statistics SET
-                Player          = ?,
-                PlayingTimeMin  = ?,
-                PlayingTimeSec  = ?,
-                Points          = ?,
-                Assists         = ?,
-                Rebounds        = ?";
+        // Use INSERT INTO ... VALUES
+        $query = "INSERT INTO Statistics (Player, Difficulty_Score, Execution_Score, Final_Score) VALUES (?, ?, ?, ?)";
+        $stmt = $db->prepare($query);
 
-    $stmt = $db->prepare($query);
+        if (!$stmt) {
+            error_log("Prepare failed: " . $db->error);
+            header("Location: error.php?message=" . urlencode("Database error. Please try again later."));
+            exit;
+        }
 
-    list($minutes, $seconds) = explode(':', $playerStat->playingTime());
-    $stmt->bind_param('dddddd', $playerID,
-        $minutes,
-        $seconds,
-        $playerStat->pointsScored(),
-        $playerStat->assists(),
-        $playerStat->rebounds());
-    @$stmt->execute(); // ignore errors, for now.
-  }
+        $stmt->bind_param('iddd', $playerID, $diff, $exec, $fin);
+        $stmt->execute();
+        $stmt->close();
+    }
 }
 
-// Redirect back to home page
 header("Location: home_page.php");
 exit();
 ?>

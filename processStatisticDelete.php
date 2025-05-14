@@ -9,7 +9,7 @@ requireLogin();
 $userRole = getUserRole();
 
 // Restrict access based on role
-if ($userRole !== 'manager') {
+if ($userRole !== 'manager' && $userRole !== 'coach') {
     header("Location: unauthorized.php");
     exit;
 }
